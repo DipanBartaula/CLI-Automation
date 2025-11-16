@@ -1,0 +1,127 @@
+import chromadb
+from chromadb.config import Settings as ChromaSettings
+from typing import List, Dict, Any, Optional
+import structlog
+
+from config.settings import settings
+
+logger = structlog.get_logger()
+
+class VectorStore:
+    """
+    Vector database for semantic memory retrieval.
+    
+    Uses ChromaDB for embedding storage and similarity search.
+    """
+    
+    def __init__(self):
+        self.client = chromadb.PersistentClient(
+            path=str(settings.memory.vector_db_path),
+            settings=ChromaSettings(anonymized_telemetry=False),
+        )
+        
+        # Create collections
+        self.commands_collection = self.client.get_or_create_collection(
+            name="commands",
+            metadata={"description": "Command execution history"},
+        )
+        
+        self.tasks_collection = self.client.get_or_create_collection(
+            name="tasks",
+            metadata={"description": "Task completion history"},
+        )
+    
+    def add_command(
+        self,
+        command: str,
+        output: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Add command to vector store."""
+        try:
+            doc_id = f"cmd_{len(self.commands_collection.get()['ids'])}"
+            
+            self.commands_collection.add(
+                documents=[f"{command}\n{output}"],
+                metadatas=[metadata or {}],
+                ids=[doc_id],
+            )
+        except Exception as e:
+            logger.error("vector_add_failed", error=str(e))
+    
+    def search_similar_commands(
+        self,
+        query: str,
+        n_results: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """Find semantically similar past commands."""
+        try:
+            results = self.commands_collection.query(
+                query_texts=[query],
+                n_results=n_results,
+            )
+            
+            if not results["ids"] or not results["ids"][0]:
+                return []
+            
+            return [
+                {
+                    "id": results["ids"][0][i],
+                    "document": results["documents"][0][i],
+                    "metadata": results["metadatas"][0][i],
+                    "distance": results["distances"][0][i],
+                }
+                for i in range(len(results["ids"][0]))
+            ]
+        except Exception as e:
+            logger.error("vector_search_failed", error=str(e))
+            return []
+    
+    def add_task(
+        self,
+        description: str,
+        steps: List[str],
+        outcome: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Add task to vector store."""
+        try:
+            doc_id = f"task_{len(self.tasks_collection.get()['ids'])}"
+            
+            task_doc = f"{description}\nSteps: {'; '.join(steps)}\nOutcome: {outcome}"
+            
+            self.tasks_collection.add(
+                documents=[task_doc],
+                metadatas=[metadata or {}],
+                ids=[doc_id],
+            )
+        except Exception as e:
+            logger.error("vector_add_task_failed", error=str(e))
+    
+    def search_similar_tasks(
+        self,
+        query: str,
+        n_results: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Find semantically similar past tasks."""
+        try:
+            results = self.tasks_collection.query(
+                query_texts=[query],
+                n_results=n_results,
+            )
+            
+            if not results["ids"] or not results["ids"][0]:
+                return []
+            
+            return [
+                {
+                    "id": results["ids"][0][i],
+                    "document": results["documents"][0][i],
+                    "metadata": results["metadatas"][0][i],
+                    "distance": results["distances"][0][i],
+                }
+                for i in range(len(results["ids"][0]))
+            ]
+        except Exception as e:
+            logger.error("vector_search_tasks_failed", error=str(e))
+            return []
