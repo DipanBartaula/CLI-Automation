@@ -1,6 +1,6 @@
 
-
 openai>=1.12.0
+
 
 chromadb>=0.4.22
 sentence-transformers>=2.3.1
@@ -31,4 +31,3 @@ structlog>=24.1.0
 
 pytest>=7.4.4
 pytest-asyncio>=0.23.3
-

@@ -1,5 +1,3 @@
-```python
-"""Application launcher and controller."""
 import subprocess
 import platform
 from typing import Dict, Any, List, Optional
@@ -165,4 +163,3 @@ class AppLauncher:
                 },
             },
         ]
-```

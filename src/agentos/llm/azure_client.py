@@ -76,4 +76,3 @@ class AzureOpenAIClient:
         except Exception as e:
             logger.error("embedding_failed", error=str(e))
             raise
-```

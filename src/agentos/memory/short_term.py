@@ -90,4 +90,3 @@ class ShortTermMemory:
         """Clear all short-term memory."""
         self._memory.clear()
         self._task_context = {}
-```
