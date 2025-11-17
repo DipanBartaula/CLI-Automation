@@ -173,12 +173,24 @@ class TestLongTermMemory:
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test_memory.db"
             yield db_path
+            # Ensure DB is closed before cleanup (Windows fix)
+            import gc
+            gc.collect()
     
     @pytest.fixture
     def long_term(self, temp_db):
         """Create a LongTermMemory instance with temp database."""
         print("\n[FIXTURE] Creating LongTermMemory instance...")
-        return LongTermMemory(db_path=temp_db)
+        instance = LongTermMemory(db_path=temp_db)
+        yield instance
+        # Close database connection before cleanup
+        try:
+            if hasattr(instance, 'conn') and instance.conn:
+                instance.conn.close()
+        except Exception as e:
+            print(f"[DEBUG] Error closing connection: {e}")
+        import gc
+        gc.collect()
     
     def test_initialization(self, long_term):
         """Test LongTermMemory initialization."""
@@ -489,6 +501,9 @@ class TestMemoryIntegration:
             print("[PERSISTENCE] Creating first instance...")
             mem1 = LongTermMemory(db_path=db_path)
             mem1.add_command("persistent cmd", "output", True)
+            del mem1
+            import gc
+            gc.collect()
             
             # Second instance with same db
             print("[PERSISTENCE] Creating second instance with same DB...")
@@ -498,6 +513,8 @@ class TestMemoryIntegration:
             print("[PERSISTENCE] Validating persistence...")
             assert len(history) == 1
             assert history[0]["command"] == "persistent cmd"
+            del mem2
+            gc.collect()
         
         print("[PASSED] Memory persistence works correctly")
 

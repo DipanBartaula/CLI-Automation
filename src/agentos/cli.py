@@ -1,5 +1,12 @@
 import asyncio
 from typing import Optional
+import sys
+import os
+
+# Add src and project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 import click
 from rich.console import Console
 from rich.markdown import Markdown
@@ -10,7 +17,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 import structlog
 
-from .core.agent import AgentOS
+from agentos.core.agent import AgentOS
 from config.settings import settings
 
 console = Console()

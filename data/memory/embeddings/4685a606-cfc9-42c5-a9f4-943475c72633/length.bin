@@ -1,0 +1,2 @@
+invalid type: string "write_file({\"path\": \"test_file.txt\", \"content\": \"This is a test content for the file.\"})\n{\"success\": true, \"path\": \"C:\\\\Users\\\\acer\\\\OneDrive\\\\Desktop\\\\CLI-AUTO\\\\CLI-Automation\\\\test_file.txt\", \"size\": 36}", expected f64cess\": true, \"error\": null}", expected a boolean Mainly spaces before punctuation,
+        and some abbreviated english form
