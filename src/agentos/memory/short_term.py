@@ -11,6 +11,10 @@ class MemoryItem:
     timestamp: datetime = field(default_factory=datetime.now)
     metadata: Dict[str, Any] = field(default_factory=dict)
     item_type: str = "general"  # command, result, conversation, etc.
+    
+    def __post_init__(self):
+        """Debug logging after initialization."""
+        print(f"[DEBUG] MemoryItem created - Type: {self.item_type}, Content length: {len(self.content)}, Timestamp: {self.timestamp}")
 
 class ShortTermMemory:
     """
@@ -27,6 +31,7 @@ class ShortTermMemory:
         self._memory: deque = deque(maxlen=capacity)
         self._session_start = datetime.now()
         self._task_context: Dict[str, Any] = {}
+        print(f"[DEBUG] ShortTermMemory initialized - Capacity: {capacity}, Session Start: {self._session_start}")
     
     def add(
         self,
@@ -41,6 +46,7 @@ class ShortTermMemory:
             metadata=metadata or {},
         )
         self._memory.append(item)
+        print(f"[DEBUG] Item added to ShortTermMemory - Type: {item_type}, Current size: {len(self._memory)}/{self.capacity}")
     
     def get_recent(self, n: int = 10, item_type: Optional[str] = None) -> List[MemoryItem]:
         """Get n most recent items, optionally filtered by type."""
@@ -49,7 +55,9 @@ class ShortTermMemory:
         if item_type:
             items = [item for item in items if item.item_type == item_type]
         
-        return items[-n:]
+        result = items[-n:]
+        print(f"[DEBUG] Retrieved {len(result)} recent items - Filter type: {item_type}, Total available: {len(items)}")
+        return result
     
     def get_context_summary(self) -> str:
         """Generate summary of recent context."""
@@ -77,10 +85,12 @@ class ShortTermMemory:
             "started": datetime.now(),
             **context,
         }
+        print(f"[DEBUG] Task context set - Task: {task_name}, Context keys: {list(context.keys())}")
     
     def clear_task_context(self) -> None:
         """Clear current task context."""
         self._task_context = {}
+        print(f"[DEBUG] Task context cleared")
     
     def get_task_context(self) -> Dict[str, Any]:
         """Get current task context."""
@@ -88,5 +98,7 @@ class ShortTermMemory:
     
     def clear(self) -> None:
         """Clear all short-term memory."""
+        print(f"[DEBUG] Clearing all ShortTermMemory - Items before: {len(self._memory)}")
         self._memory.clear()
         self._task_context = {}
+        print(f"[DEBUG] ShortTermMemory cleared - Items after: {len(self._memory)}")

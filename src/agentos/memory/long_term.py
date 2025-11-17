@@ -22,10 +22,13 @@ class LongTermMemory:
     
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or settings.memory.db_path
+        print(f"[DEBUG] LongTermMemory initializing - DB Path: {self.db_path}")
         self._init_database()
+        print(f"[DEBUG] LongTermMemory initialized successfully")
     
     def _init_database(self) -> None:
         """Initialize SQLite database schema."""
+        print(f"[DEBUG] Initializing database schema at {self.db_path}")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
@@ -40,6 +43,7 @@ class LongTermMemory:
                     metadata TEXT
                 )
             """)
+            print(f"[DEBUG] Created command_history table")
             
             # Task history table
             cursor.execute("""
@@ -52,6 +56,7 @@ class LongTermMemory:
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            print(f"[DEBUG] Created task_history table")
             
             # User preferences
             cursor.execute("""
@@ -61,6 +66,7 @@ class LongTermMemory:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            print(f"[DEBUG] Created preferences table")
             
             # Learning patterns
             cursor.execute("""
@@ -73,8 +79,10 @@ class LongTermMemory:
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            print(f"[DEBUG] Created learned_patterns table")
             
             conn.commit()
+            print(f"[DEBUG] Database schema initialization completed")
     
     def add_command(
         self,
@@ -84,6 +92,7 @@ class LongTermMemory:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Record command execution."""
+        print(f"[DEBUG] Recording command - Command: {command[:50]}, Success: {success}")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -94,6 +103,7 @@ class LongTermMemory:
                 (command, output, success, json.dumps(metadata or {}))
             )
             conn.commit()
+            print(f"[DEBUG] Command recorded successfully")
     
     def get_command_history(
         self,
@@ -101,6 +111,7 @@ class LongTermMemory:
         success_only: bool = False,
     ) -> List[Dict[str, Any]]:
         """Retrieve command history."""
+        print(f"[DEBUG] Retrieving command history - Limit: {limit}, Success only: {success_only}")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
@@ -112,7 +123,9 @@ class LongTermMemory:
             cursor.execute(query, (limit,))
             
             columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            print(f"[DEBUG] Retrieved {len(results)} command history entries")
+            return results
     
     def add_task(
         self,
@@ -122,6 +135,7 @@ class LongTermMemory:
         duration_seconds: int,
     ) -> None:
         """Record completed task."""
+        print(f"[DEBUG] Recording task - Description: {description[:50]}, Steps: {len(steps)}, Duration: {duration_seconds}s")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -132,9 +146,11 @@ class LongTermMemory:
                 (description, json.dumps(steps), outcome, duration_seconds)
             )
             conn.commit()
+            print(f"[DEBUG] Task recorded successfully")
     
     def get_similar_tasks(self, description: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Find similar past tasks (simple keyword matching)."""
+        print(f"[DEBUG] Searching for similar tasks - Description: {description[:50]}, Limit: {limit}")
         keywords = set(description.lower().split())
         
         with sqlite3.connect(self.db_path) as conn:
@@ -153,10 +169,13 @@ class LongTermMemory:
                     scored_tasks.append((overlap, task))
             
             scored_tasks.sort(reverse=True, key=lambda x: x[0])
-            return [task for _, task in scored_tasks[:limit]]
+            results = [task for _, task in scored_tasks[:limit]]
+            print(f"[DEBUG] Found {len(results)} similar tasks")
+            return results
     
     def set_preference(self, key: str, value: Any) -> None:
         """Store user preference."""
+        print(f"[DEBUG] Setting preference - Key: {key}, Value type: {type(value).__name__}")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -167,16 +186,21 @@ class LongTermMemory:
                 (key, json.dumps(value))
             )
             conn.commit()
+            print(f"[DEBUG] Preference saved successfully")
     
     def get_preference(self, key: str, default: Any = None) -> Any:
         """Retrieve user preference."""
+        print(f"[DEBUG] Retrieving preference - Key: {key}")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT value FROM preferences WHERE key = ?", (key,))
             result = cursor.fetchone()
             
             if result:
-                return json.loads(result[0])
+                value = json.loads(result[0])
+                print(f"[DEBUG] Preference found - Key: {key}, Value type: {type(value).__name__}")
+                return value
+            print(f"[DEBUG] Preference not found - Key: {key}, Using default")
             return default
     
     def cleanup_old_data(self, days: int = 30) -> None:
